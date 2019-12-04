@@ -30,6 +30,7 @@ windowName = "image"
 mainTiles = cv.vconcat([])
 enablePreview = 1
 enableAutolevel = 1
+tresholdValue = 220
 
 parser = ArgumentParser()
 parser.add_argument("-f", "--folder", dest="folder", default="", help="Custom folder to process")
@@ -49,14 +50,16 @@ def updateTilesImpl():
     global mainTiles
     global enablePreview
     global enableAutolevel
+    global tresholdValue
     
     nrows = []
     for row in srcImages:
         nrow = []
         for img in row:
             if enablePreview == 1:
-                dest = ImageLevels(img, darkLevel, middleLevel, lightLevel, enableAutolevel == 1)
-                dest = ImageHUE(dest, hue - 127, saturation - 127)
+                dest = ImageClean(img, tresholdValue, args.debug)
+                #dest = ImageLevels(dest, darkLevel, middleLevel, lightLevel, enableAutolevel == 1)
+                #dest = ImageHUE(dest, hue - 127, saturation - 127)
                 nrow.append(dest)
             else:
                 nrow.append(img)
@@ -105,6 +108,11 @@ def onAutolevel(val):
     global enableAutolevel
     enableAutolevel = val
     updateTiles()
+    
+def onTreshold(val):
+    global tresholdValue
+    tresholdValue = val
+    updateTiles()
 
 for folderIdx, folder in enumerate(os.listdir(basePath)):
     if args.folder != "" and args.folder != folder:
@@ -133,7 +141,6 @@ for folderIdx, folder in enumerate(os.listdir(basePath)):
         fn = os.path.join(basePath, path)
         image = cv.imread(fn)
         image = ImageCrop(image, args.debug)
-        image = ImageClean(image, args.debug)
         image = cv.resize(image, (PREVIEW_SIZE, PREVIEW_SIZE), interpolation = cv.INTER_AREA)
         row.append(image)
         if len(row) == TILES_COL:
@@ -159,6 +166,7 @@ for folderIdx, folder in enumerate(os.listdir(basePath)):
     cv.createTrackbar("Light", windowName, lightLevel, 255, onLight)
     cv.createTrackbar("HUE", windowName, hue, 255, onHUE)
     cv.createTrackbar("Saturation", windowName, saturation, 255, onSaturation)
+    cv.createTrackbar("TRESHOLD", windowName, tresholdValue, 255, onTreshold)
     
     mainTiles = concatTiles(srcImages)
     updateTiles()
