@@ -13,15 +13,12 @@ def ImageHUE(image, hue = 0, saturation = 0, debug = False):
     # HUE shift
     if hue != 0 or saturation != 0:
         destHSV = cv.cvtColor(image, cv.COLOR_BGR2HSV)
-
-        X = [0, 0, 127, 255, 255]
-        saturY = [0, 0, 127 + saturation, 255, 255]
-        saturLerp = interpolate.interp1d(X, saturY, kind='linear')
+        satF = float(saturation + 127) / 127.0
         lut = [
                 [
                     [
                         (i + hue) % 180, 
-                        min(255, max(0, round(saturLerp(i)))), 
+                        max(0, min(255, i * satF)), 
                         i
                     ] for i in range(256)
                 ]

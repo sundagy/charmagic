@@ -17,7 +17,8 @@ from threading import Timer
 basePath = 'PHOTOS'
 destPath = 'OUTPUT'
 TILES_COL = 6
-PREVIEW_SIZE = 140
+PREVIEW_SIZE_W = 140
+PREVIEW_SIZE_H = int(PREVIEW_SIZE_W * 0.75)
 srcImages = []
 srcFilenames = []
 updateTimer = None
@@ -53,16 +54,18 @@ def updateTilesImpl():
     global tresholdValue
     
     nrows = []
+    idx = 0
     for row in srcImages:
         nrow = []
         for img in row:
-            if enablePreview == 1:
-                dest = ImageClean(img, tresholdValue, args.debug)
-                #dest = ImageLevels(dest, darkLevel, middleLevel, lightLevel, enableAutolevel == 1)
-                #dest = ImageHUE(dest, hue - 127, saturation - 127)
+            if enablePreview == 1 and idx < len(srcFilenames):
+                dest = ImageLevels(img, darkLevel, middleLevel, lightLevel, enableAutolevel == 1)
+                dest = ImageHUE(dest, hue - 127, saturation - 127)
+                dest = ImageClean(dest, tresholdValue, args.debug)
                 nrow.append(dest)
             else:
                 nrow.append(img)
+            idx += 1
         nrows.append(nrow)
 
     mainTiles = concatTiles(nrows)
@@ -141,18 +144,19 @@ for folderIdx, folder in enumerate(os.listdir(basePath)):
         fn = os.path.join(basePath, path)
         image = cv.imread(fn)
         image = ImageCrop(image, args.debug)
-        image = cv.resize(image, (PREVIEW_SIZE, PREVIEW_SIZE), interpolation = cv.INTER_AREA)
+        image = cv.resize(image, (PREVIEW_SIZE_W, PREVIEW_SIZE_H), interpolation = cv.INTER_AREA)
         row.append(image)
         if len(row) == TILES_COL:
             srcImages.append(row)
             row = []
+
         print "Read", idx+1, "/", len(files)
 
     #fill tail for tiles
     if len(row) > 0:
         for i in range(len(row), TILES_COL):
-            blank = np.zeros((PREVIEW_SIZE,PREVIEW_SIZE,3), np.uint8)
-            blank[:, 0:PREVIEW_SIZE] = (255,255,255)
+            blank = np.zeros((PREVIEW_SIZE_H, PREVIEW_SIZE_W, 3), np.uint8)
+            blank[:, 0:PREVIEW_SIZE_W] = (255,255,255)
             row.append(blank)
         srcImages.append(row)
         row = []
@@ -198,6 +202,7 @@ for folderIdx, folder in enumerate(os.listdir(basePath)):
             image = ImageCrop(image)
             image = ImageLevels(image, darkLevel, middleLevel, lightLevel)
             image = ImageHUE(image, hue - 127, saturation - 127)
+            image = ImageClean(image, tresholdValue, args.debug)
             #cv.imwrite(destfn + ".jpg", image, [int(cv.IMWRITE_JPEG_QUALITY), 100, int(cv.IMWRITE_JPEG_PROGRESSIVE), 1])
             cv.imwrite(destfn + ".png", image, [int(cv.IMWRITE_PNG_COMPRESSION), 100])
     else:

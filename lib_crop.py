@@ -11,9 +11,15 @@ low_threshold = 20.0
 
 def ImageCrop(src, debug = False):
     src_rs = cv.resize(src, None, fx=0.2, fy=0.2, interpolation=cv.INTER_CUBIC)
-    src_gray = cv.cvtColor(src_rs, cv.COLOR_BGR2GRAY)
-    img_blur = cv.blur(src_gray, (10, 10))
-    detected_edges = cv.Canny(img_blur, low_threshold, low_threshold * ratio, kernel_size)
+
+    img_blur = cv.GaussianBlur(src_rs, (7,7), 0)
+    lower = np.array([0,   0,  218])
+    upper = np.array([255, 16, 255])
+    hsv = cv.cvtColor(img_blur, cv.COLOR_BGR2HSV)
+    src_gray = cv.inRange(hsv, lower, upper)
+
+    #src_gray = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
+    detected_edges = cv.Canny(src_gray, low_threshold, low_threshold * ratio, kernel_size)
     contours, _ = cv.findContours(detected_edges, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
     # Filter too small objects
